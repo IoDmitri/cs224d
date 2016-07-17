@@ -129,9 +129,10 @@ def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
     # assignment!
 
     ### YOUR CODE HERE
-    print currentWord
-    print C
-    print contextWords
+    predicted = inputVectors[tokens[currentWord],:]
+    print predicted
+    target_indecies = np.vectorize(tokens.get)(contextWords)
+    print target_indecies
 
     ### END YOUR CODE
     
