@@ -45,7 +45,7 @@ def forward_backward_prop(data, labels, params, dimensions):
     # print "a2",a2.shape
     y = softmax(a2)
     cost = -np.sum(np.log(y)*labels)
-    # print "cost", cost
+    print "cost", cost
 
     ### END YOUR CODE
     ### YOUR CODE HERE: backward propagation

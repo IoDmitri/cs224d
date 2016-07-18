@@ -50,19 +50,18 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     # assignment!                                                  
     
     ### YOUR CODE HERE
-    d = np.exp(outputVectors.T.dot(predicted))
-    n = np.exp(outputVectors[t,:].T.dot(predicted))
-    y_hat = n / np.sum(d)
+    # d = np.exp(outputVectors.dot(predicted.T))
+    # n = np.exp(outputVectors[target,:].T.dot(predicted))
+    y_hat = softmax(outputVectors.dot(predicted.T))
 
     y = np.zeros(outputVectors.shape[0])
     y[target] = 1
 
-    cost = y.dot(np.log(y_hat))
-
+    cost = -1*y.dot(np.log(y_hat))
     d1 = y_hat - y
 
     gradPred = outputVectors.T.dot(d1)
-    grad = predicted.dot(d1.T)
+    grad = d1.reshape(d1.shape[0],1).dot(predicted.reshape(1, predicted.shape[0]))
 
     ### END YOUR CODE
     
@@ -87,15 +86,16 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     
     ### YOUR CODE HERE
     #build the k matrix 
-    s = lambda s: sigmoid(-1*s.T.dot(predicted)) #Sigmoid function - pass in a vector to dot the V_hat with. 
+    s = lambda s: sigmoid(s.dot(predicted.T)) #Sigmoid function - pass in a vector to dot pred.T with. 
+    col_vec_to_scaler = lambda s: np.ones((1,s.shape[0])).dot(s)[0,0] #take a col vector and sum it to a single scaler 
     k_ind = np.array([dataset.sampleTokenIdx() for x in range(k)]) #random indecies to sample
-    k = outputVectors[k_ind, :] #k matrix
-    ov = s(outputVectors[target, :]) - 1  # U_o.T dot V_hat -1 , this comes up a few times in the equations 
-    kv = s(-1*k) # -U_k dot V_c - 1
-    cost = -1*np.log(s(outputVectors[target])) - np.sum(np.log(kv ))
-    gradPred = ov.dot(output[target, :]) - np.sum((kv -1).dot(k))
+    k = outputVectors[k_ind, :] #k matrix <- k x d
+    kv = s(-1*k) # -U_k dot V_c - 1 <- k x 1
+    ov = s(outputVectors[target, :])   # U_o.T dot V_hat , this comes up a few times in the equations 
+    cost = -1*np.log(ov) - col_vec_to_scaler(np.log(kv))
+    gradPred = (ov -1).dot(output[target, :]) - k.T.dot(kv-1)
     grad = np.zeros(outputVectors.shape)
-    grad[target] = ov.dot(predicted)
+    grad[target] = (ov-1).dot(predicted)
     grad[k_ind] = -1*((kv -1).dot(predicted))
     ### END YOUR CODE
     
@@ -133,7 +133,10 @@ def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
     print predicted
     target_indecies = np.vectorize(tokens.get)(contextWords)
     print target_indecies
-
+    cost, gradPred, grad = word2vecCostAndGradient(predicted, target_indecies[0], outputVectors, dataset)
+    print "cost", cost
+    print "gradPred", gradPred
+    print "grad", grad
     ### END YOUR CODE
     
     return cost, gradIn, gradOut
