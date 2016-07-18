@@ -24,11 +24,11 @@ def softmax(x):
     maxes = np.amax(x, axis = 1 if x.ndim > 1 else 0)
     maxes = maxes.reshape(maxes.shape[0], 1) if x.ndim > 1 else maxes
     e = np.exp(x - maxes)
-    print "e", e
-    print "e.shape", e.shape
+    # print "e", e
+    # print "e.shape", e.shape
     sums = np.sum(e, axis = 1 if e.ndim > 1 else 0, keepdims=True)
-    print "sums", sums
-    print "sums.shape", sums.shape
+    # print "sums", sums
+    # print "sums.shape", sums.shape
     dist = e / sums
 
     ### END YOUR CODE
