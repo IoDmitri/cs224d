@@ -88,7 +88,7 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     #build the k matrix 
     s = lambda s: sigmoid(s.dot(predicted.T)) #Sigmoid function - pass in a vector to dot pred.T with. 
     col_vec_to_scaler = lambda s: np.ones((1,s.shape[0])).dot(s)[0,0] #take a col vector and sum it to a single scaler 
-    k_ind = np.array([dataset.sampleTokenIdx() for x in range(k)]) #random indecies to sample
+    k_ind = np.array([dataset.sampleTokenIdx() for x in range(K)]) #random indecies to sample
     k = outputVectors[k_ind, :] #k matrix <- k x d
     kv = s(-1*k) # -U_k dot V_c - 1 <- k x 1
     ov = s(outputVectors[target, :])   # U_o.T dot V_hat , this comes up a few times in the equations 
@@ -133,7 +133,16 @@ def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
     print predicted
     target_indecies = np.vectorize(tokens.get)(contextWords)
     print target_indecies
-    cost, gradPred, grad = word2vecCostAndGradient(predicted, target_indecies[0], outputVectors, dataset)
+    cost = 0
+    gradIn = np.zeros(inputVectors.shape)
+    gradOut = np.zeros(outputVectors.shape)
+
+    for index in target_indecies:
+        w_cost, gradPred, grad = word2vecCostAndGradient(predicted, index, outputVectors, dataset)
+        cost += w_cost
+        gradIn = gradIn + gradPred
+        gradOut = gradOut + grad
+    cost = (1/target_indecies.size)*cost
     print "cost", cost
     print "gradPred", gradPred
     print "grad", grad
