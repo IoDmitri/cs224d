@@ -96,7 +96,7 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     gradPred = (ov -1)*(outputVectors[target, :]) - k.T.dot(kv-1)
     grad = np.zeros(outputVectors.shape)
     grad[target] = (ov-1)*predicted
-    grad[k_ind] = -1*((kv -1).dot(predicted))
+    grad[k_ind] = -1*((kv -1).reshape(kv.shape[0], 1).dot(predicted.reshape(1,3)))
     ### END YOUR CODE
     
     return cost, gradPred, grad
