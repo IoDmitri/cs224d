@@ -50,8 +50,6 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     # assignment!                                                  
     
     ### YOUR CODE HERE
-    # d = np.exp(outputVectors.dot(predicted.T))
-    # n = np.exp(outputVectors[target,:].T.dot(predicted))
     y_hat = softmax(outputVectors.dot(predicted.T))
 
     y = np.zeros(outputVectors.shape[0])
@@ -129,10 +127,11 @@ def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
     # assignment!
 
     ### YOUR CODE HERE
-    predicted = inputVectors[tokens[currentWord],:]
-    print predicted
+    current_index = tokens[currentWord]
+    predicted = inputVectors[current_index,:]
+    #print predicted
     target_indecies = np.vectorize(tokens.get)(contextWords)
-    print target_indecies
+    #print target_indecies
     cost = 0
     gradIn = np.zeros(inputVectors.shape)
     gradOut = np.zeros(outputVectors.shape)
@@ -140,12 +139,13 @@ def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
     for index in target_indecies:
         w_cost, gradPred, grad = word2vecCostAndGradient(predicted, index, outputVectors, dataset)
         cost += w_cost
-        gradIn = gradIn + gradPred
+        #print "gradIn before", gradIn
+        gradIn[current_index] +=  gradPred
+        #print "gradIn after", gradIn
         gradOut = gradOut + grad
-    cost = (1/target_indecies.size)*cost
-    print "cost", cost
-    print "gradPred", gradPred
-    print "grad", grad
+    # print "cost", cost
+    # print "gradPred", gradPred
+    # print "grad", grad
     ### END YOUR CODE
     
     return cost, gradIn, gradOut
