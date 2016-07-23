@@ -86,15 +86,28 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     #build the k matrix 
     s = lambda s: sigmoid(s.dot(predicted.T)) #Sigmoid function - pass in a vector to dot pred.T with. 
     col_vec_to_scaler = lambda s: np.ones((1,s.shape[0])).dot(s) #take a col vector and sum it to a single scaler 
-    k_ind = np.array([dataset.sampleTokenIdx() for x in range(K)]) #random indecies to sample
+    k_ind = []
+    for ind in range(K):
+        new_ind = dataset.sampleTokenIdx()
+        while new_ind == target:
+            new_ind = dataset.sampleTokenIdx()
+        k_ind += [new_ind]
+    k_ind = np.array(k_ind) #random indecies to sample
     k = outputVectors[k_ind, :] #k matrix <- k x d
-    kv = s(-1*k) # -U_k dot V_c - 1 <- k x 1
+    kv = s(-1*k) # -U_k dot V_c <- k x 1
+    #print "kv.shape", kv.shape
     ov = s(outputVectors[target, :])   # U_o.T dot V_hat , this comes up a few times in the equations 
     cost = -1*np.log(ov) - col_vec_to_scaler(np.log(kv))
     gradPred = (ov -1)*(outputVectors[target, :]) - k.T.dot(kv-1)
+    print "gradPred", gradPred
     grad = np.zeros(outputVectors.shape)
+    #print "grad", grad
     grad[target] = (ov-1)*predicted
-    grad[k_ind] = -1*((kv -1).reshape(kv.shape[0], 1).dot(predicted.reshape(1,3)))
+    #print "grad post target", grad
+    grad_temp = ((kv -1).reshape(kv.shape[0], 1).dot(predicted.reshape(1,predicted.shape[0])))
+    for i in range(K):
+        grad[k_ind[i]] += grad_temp[i,:]
+    #print "grad post k", grad
     ### END YOUR CODE
     
     return cost, gradPred, grad
