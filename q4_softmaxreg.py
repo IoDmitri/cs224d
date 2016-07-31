@@ -23,6 +23,9 @@ def getSentenceFeature(tokens, wordVectors, sentence):
     sentVector = np.zeros((wordVectors.shape[1],))
     
     ### YOUR CODE HERE
+    print sentVector.shape
+    print wordVectors
+    print sentence
     raise NotImplementedError
     ### END YOUR CODE
     
