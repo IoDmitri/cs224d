@@ -10,7 +10,7 @@ from q4_softmaxreg import softmaxRegression, getSentenceFeature, accuracy, softm
 # NOTE: fill in one more "your code here" below before running!
 REGULARIZATION = None   # Assign a list of floats in the block below
 ### YOUR CODE HERE
-REGULARIZATION = [0.0001, 0.001, 0.01, 1, 10]
+REGULARIZATION = [0.0001, 0.0003, 0.001, 0.003,  0.01, 0.03, 0.0]
 ### END YOUR CODE
 
 # Load the dataset
@@ -88,9 +88,9 @@ BEST_WEIGHTS = None
 ### YOUR CODE HERE 
 best_accuracy = 0
 for result in results:
-    if results["dev"] > best_accuracy:
+    if result["dev"] > best_accuracy:
         best_accuracy = result["dev"]
-        BEST_WEIGHTS = results["weights"]
+        BEST_WEIGHTS = result["weights"]
         BEST_REGULARIZATION = result["reg"]
 ### END YOUR CODE
 
