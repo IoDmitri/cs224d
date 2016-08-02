@@ -23,10 +23,9 @@ def getSentenceFeature(tokens, wordVectors, sentence):
     sentVector = np.zeros((wordVectors.shape[1],))
     
     ### YOUR CODE HERE
-    print sentVector.shape
-    print wordVectors
-    print sentence
-    raise NotImplementedError
+    word_2_rep = lambda w: wordVectors[tokens[w], :]
+    vectors = np.array([word_2_rep(word) for word in sentence])
+    sentVector = vectors.mean(axis=1)
     ### END YOUR CODE
     
     return sentVector
