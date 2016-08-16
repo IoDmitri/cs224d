@@ -152,9 +152,13 @@ class NERModel(LanguageModel):
       window: tf.Tensor of shape (-1, window_size*embed_size)
     """
     # The embedding lookup is currently only implemented for the CPU
-    with tf.device('/cpu:0'):
+    #was '/cpu:0'
+    with tf.device('/gpu:0'):
       ### YOUR CODE HERE
-      raise NotImplementedError
+      initializer = xavier_weight_init()
+      params = tf.Variable(initializer((len(self.wv), embed_size)))
+      window = tf.nn.embedding_lookup(params, self.input_placeholder)
+      window = tf.reshape(window, [-1, window_size*embed_size])
       ### END YOUR CODE
       return window
 
@@ -186,7 +190,7 @@ class NERModel(LanguageModel):
       output: tf.Tensor of shape (batch_size, label_size)
     """
     ### YOUR CODE HERE
-    raise NotImplementedError
+    
     ### END YOUR CODE
     return output 
 
