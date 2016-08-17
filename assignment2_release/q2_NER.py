@@ -190,7 +190,15 @@ class NERModel(LanguageModel):
       output: tf.Tensor of shape (batch_size, label_size)
     """
     ### YOUR CODE HERE
-    
+    random_init = xavier_weight_init()
+    with tf.variable_scope("Layer"):
+      w = random_init((self.config.window_size*self.config.embed_size, self.config.hidden_size))
+      b1 = random_init((self.config.hidden_size,))
+      z = tf.matmul(window,w) + b1
+      h = 2 * (1/ (1 + tf.exp(2*z))) - 1
+
+    with tf.variable_scope("Softmax"):
+      
     ### END YOUR CODE
     return output 
 
