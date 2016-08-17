@@ -120,10 +120,14 @@ class NERModel(LanguageModel):
     """
     ### YOUR CODE HERE
     feed_dict = {
-      self.input_placeholder : input_batch,
-      self.labels_placeholder: label_batch,
-      self.dropout_placeholder: dropout
+      self.input_placeholder : input_batch
     }
+
+    if label_batch is not None:
+      feed_dict[self.labels_placeholder] = label_batch
+
+    if dropout is not None:
+      feed_dict[self.dropout_placeholder] = dropout
     ### END YOUR CODE
     return feed_dict
 
@@ -156,7 +160,7 @@ class NERModel(LanguageModel):
     with tf.device('/gpu:0'):
       ### YOUR CODE HERE
       initializer = xavier_weight_init()
-      params = tf.Variable(initializer((len(self.wv), embed_size)))
+      embedding = tf.get_variable("Embedding", [len(self.wv), self.config.embed_size])
       window = tf.nn.embedding_lookup(params, self.input_placeholder)
       window = tf.reshape(window, [-1, window_size*embed_size])
       ### END YOUR CODE
@@ -191,14 +195,20 @@ class NERModel(LanguageModel):
     """
     ### YOUR CODE HERE
     random_init = xavier_weight_init()
-    with tf.variable_scope("Layer"):
-      w = random_init((self.config.window_size*self.config.embed_size, self.config.hidden_size))
-      b1 = random_init((self.config.hidden_size,))
-      z = tf.matmul(window,w) + b1
-      h = 2 * (1/ (1 + tf.exp(2*z))) - 1
+    with tf.variable_scope("Layer", initializer=xavier_weight_init()) as scope:
+      W = tf.get_variable("W", (self.config.window_size*self.config.embed_size, self.config.hidden_size))
+      b1 = tf.get_variable("b1", (self.config.hidden_size,))
+      h = tf.nn.tanh(tf.matmul(window, W) + b1)
+      if self.config.l2:
+        tf.add_to_collection("total_loss", 0.5 * self.config.l2 * tf.nn.l2_loss(W))
 
-    with tf.variable_scope("Softmax"):
-      
+    with tf.variable_scope("Softmax", initializer=xavier_weight_init()) as scope:
+      U = tf.get_variable("U", (self.config.hidden_size, self.config.label_size))
+      b2 = tf.get_variable("b2", (self.config.label_size,))
+      y = tf.matmul(h,U) + b2
+      if self.config.l2:
+        tf.add_to_collection("total_loss", 0.5*self.config.l2*tf.nn.l2_loss(U))
+      output = tf.nn.dropout(y, self.dropout_placeholder)
     ### END YOUR CODE
     return output 
 
@@ -213,7 +223,10 @@ class NERModel(LanguageModel):
       loss: A 0-d tensor (scalar)
     """
     ### YOUR CODE HERE
-    raise NotImplementedError
+    softmax_ce = tf.nn.softmax_cross_entropy_with_logits(y, self.labels_placeholder)
+    averaged_loss = tf.reduce_mean(softmax_ce)
+    tf.add_to_collection('total_loss', averaged_loss)
+    loss = tf.add_n(tf.get_collection('total_loss')) 
     ### END YOUR CODE
     return loss
 
@@ -237,7 +250,9 @@ class NERModel(LanguageModel):
       train_op: The Op for training.
     """
     ### YOUR CODE HERE
-    raise NotImplementedError
+    opt = tf.train.AdamOptimizer(self.config.lr)
+    global_step = tf.Variable(0, "global_step", trainable=False)
+    train_op = opt.minimize(loss, global_step=global_step)
     ### END YOUR CODE
     return train_op
 
