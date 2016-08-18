@@ -94,7 +94,7 @@ class NERModel(LanguageModel):
     ### YOUR CODE HERE
     self.input_placeholder = tf.placeholder(tf.int32, shape=(None, self.config.window_size))
     self.labels_placeholder = tf.placeholder(tf.float32, shape=(None, self.config.label_size))
-    self.dropout_placeholder = tf.placeholder(tf.float32,1)
+    self.dropout_placeholder = tf.placeholder(tf.float32)
     ### END YOUR CODE
 
   def create_feed_dict(self, input_batch, dropout, label_batch=None):
@@ -159,9 +159,11 @@ class NERModel(LanguageModel):
     #was '/cpu:0'
     with tf.device('/gpu:0'):
       ### YOUR CODE HERE
+      window_size = self.config.window_size
+      embed_size = self.config.embed_size
       initializer = xavier_weight_init()
-      embedding = tf.get_variable("Embedding", [len(self.wv), self.config.embed_size])
-      window = tf.nn.embedding_lookup(params, self.input_placeholder)
+      embedding = tf.get_variable("Embedding", [len(self.wv), embed_size])
+      window = tf.nn.embedding_lookup(embedding, self.input_placeholder)
       window = tf.reshape(window, [-1, window_size*embed_size])
       ### END YOUR CODE
       return window
@@ -197,18 +199,18 @@ class NERModel(LanguageModel):
     random_init = xavier_weight_init()
     with tf.variable_scope("Layer", initializer=xavier_weight_init()) as scope:
       W = tf.get_variable("W", (self.config.window_size*self.config.embed_size, self.config.hidden_size))
-      b1 = tf.get_variable("b1", (self.config.hidden_size,))
+      b1 = tf.get_variable("b1", [self.config.hidden_size])
       h = tf.nn.tanh(tf.matmul(window, W) + b1)
       if self.config.l2:
         tf.add_to_collection("total_loss", 0.5 * self.config.l2 * tf.nn.l2_loss(W))
 
     with tf.variable_scope("Softmax", initializer=xavier_weight_init()) as scope:
       U = tf.get_variable("U", (self.config.hidden_size, self.config.label_size))
-      b2 = tf.get_variable("b2", (self.config.label_size,))
+      b2 = tf.get_variable("b2", [self.config.label_size])
       y = tf.matmul(h,U) + b2
       if self.config.l2:
         tf.add_to_collection("total_loss", 0.5*self.config.l2*tf.nn.l2_loss(U))
-      output = tf.nn.dropout(y, self.dropout_placeholder)
+    output = tf.nn.dropout(y, self.dropout_placeholder)
     ### END YOUR CODE
     return output 
 
