@@ -261,7 +261,7 @@ class NERModel(LanguageModel):
   def __init__(self, config):
     """Constructs the network using the helper functions defined above."""
     self.config = config
-    self.load_data(debug=True)
+    self.load_data(debug=False)
     self.add_placeholders()
     window = self.add_embedding()
     y = self.add_model(window)
