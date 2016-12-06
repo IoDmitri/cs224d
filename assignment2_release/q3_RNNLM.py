@@ -79,7 +79,9 @@ class RNNLM_Model(LanguageModel):
     (Don't change the variable names)
     """
     ### YOUR CODE HERE
-    raise NotImplementedError
+    self.input_placeholder = tf.placeholder(tf.int32, shape=(None, num_steps))
+    self.labels_placeholder = tf.placeholder(tf.float32, shape=(None, num_steps))
+    self.dropout_placeholder = tf.placeholder(tf.float32)
     ### END YOUR CODE
   
   def add_embedding(self):
@@ -99,7 +101,7 @@ class RNNLM_Model(LanguageModel):
               a tensor of shape (batch_size, embed_size).
     """
     # The embedding lookup is currently only implemented for the CPU
-    with tf.device('/cpu:0'):
+    with tf.device('/gpu:0'):
       ### YOUR CODE HERE
       raise NotImplementedError
       ### END YOUR CODE
