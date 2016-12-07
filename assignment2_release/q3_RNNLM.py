@@ -103,7 +103,9 @@ class RNNLM_Model(LanguageModel):
     # The embedding lookup is currently only implemented for the CPU
     with tf.device('/gpu:0'):
       ### YOUR CODE HERE
-      raise NotImplementedError
+      embedding = tf.get_variable("Embedding", [len(self.vocab), embed_size])
+      e_x = tf.nn.embedding_lookup(embedding, self.input_placeholder)
+      inputs = tf.unpack(e_x, axis=1)
       ### END YOUR CODE
       return inputs
 
