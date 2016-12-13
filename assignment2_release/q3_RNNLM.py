@@ -123,13 +123,17 @@ class RNNLM_Model(LanguageModel):
 
     Args:
       rnn_outputs: List of length num_steps, each of whose elements should be
-                   a tensor of shape (batch_size, embed_size).
+                   a tensor of shape (hidden_size, embed_size).
     Returns:
       outputs: List of length num_steps, each a tensor of shape
                (batch_size, len(vocab)
     """
     ### YOUR CODE HERE
-    raise NotImplementedError
+    with tf.variable_scope("Projection", initializer=tf.contrib.layers.xavier_initializer()) as scope:
+      U = tf.get_variable("U", [hidden, len(self.vocab)])
+      b_2 = tf.get_variable("b_2", [len(self.vocab)])
+      
+    outputs = tf.map_fn(lambda x: tf.matmul(x, U) + b_2)
     ### END YOUR CODE
     return outputs
 
