@@ -173,7 +173,9 @@ class RNNLM_Model(LanguageModel):
       train_op: The Op for training.
     """
     ### YOUR CODE HERE
-    raise NotImplementedError
+    opt = tf.train.AdamOptimizer(lr)
+    global_step = tf.Variable(0, name="global_step", trainable=False)
+    train_op = opt.minimize(loss, global_step=global_step)
     ### END YOUR CODE
     return train_op
   
