@@ -80,7 +80,7 @@ class RNNLM_Model(LanguageModel):
     """
     ### YOUR CODE HERE
     self.input_placeholder = tf.placeholder(tf.int32, shape=(None, num_steps))
-    self.labels_placeholder = tf.placeholder(tf.float32, shape=(None, num_steps))
+    self.labels_placeholder = tf.placeholder(tf.int32, shape=(None, num_steps))
     self.dropout_placeholder = tf.placeholder(tf.float32)
     ### END YOUR CODE
   
