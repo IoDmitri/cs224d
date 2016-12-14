@@ -148,7 +148,8 @@ class RNNLM_Model(LanguageModel):
       loss: A 0-d tensor (scalar)
     """
     ### YOUR CODE HERE
-    raise NotImplementedError
+    weights = tf.ones([batch_size, num_steps], tf.int32)
+    loss = tf.python.ops.seq2seq.sequence_loss(output, self.labels_placeholder, weights)
     ### END YOUR CODE
     return loss
 
