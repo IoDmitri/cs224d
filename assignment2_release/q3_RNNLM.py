@@ -242,7 +242,7 @@ class RNNLM_Model(LanguageModel):
       I = tf.get_variable("I", [embed_size, hidden_size])
       b_1 = tf.get_variable("b_1", (hidden_size,))
       self.initial_state = tf.zeros([batch_size, hidden_size], tf.float32)
-
+      #to do:
 
     ### END YOUR CODE
     return rnn_outputs
