@@ -237,7 +237,13 @@ class RNNLM_Model(LanguageModel):
                a tensor of shape (batch_size, hidden_size)
     """
     ### YOUR CODE HERE
-    raise NotImplementedError
+    with tf.variable_scope("RNN", initializer=tf.contrib.layers.xavier_initializer()) as scope:
+      H = tf.get_variable("Hidden", [hidden_size, hidden_size])
+      I = tf.get_variable("I", [embed_size, hidden_size])
+      b_1 = tf.get_variable("b_1", (hidden_size,))
+      self.initial_state = tf.zeros([batch_size, hidden_size], tf.float32)
+
+
     ### END YOUR CODE
     return rnn_outputs
 
