@@ -79,8 +79,8 @@ class RNNLM_Model(LanguageModel):
     (Don't change the variable names)
     """
     ### YOUR CODE HERE
-    self.input_placeholder = tf.placeholder(tf.int32, shape=(None, num_steps))
-    self.labels_placeholder = tf.placeholder(tf.int32, shape=(None, num_steps))
+    self.input_placeholder = tf.placeholder(tf.int32, shape=(None, self.config.num_steps))
+    self.labels_placeholder = tf.placeholder(tf.int32, shape=(None, self.config.num_steps))
     self.dropout_placeholder = tf.placeholder(tf.float32)
     ### END YOUR CODE
   
@@ -105,7 +105,7 @@ class RNNLM_Model(LanguageModel):
       ### YOUR CODE HERE
       embedding = tf.get_variable("Embedding", [len(self.vocab), embed_size])
       e_x = tf.nn.embedding_lookup(embedding, self.input_placeholder)
-      inputs = tf.unpack(e_x, axis=1)
+      inputs = [tf.squeeze(s, [1]) for s in tf.split(1, self.config.num_steps, e_x)] 
       ### END YOUR CODE
       return inputs
 
@@ -130,10 +130,10 @@ class RNNLM_Model(LanguageModel):
     """
     ### YOUR CODE HERE
     with tf.variable_scope("Projection", initializer=tf.contrib.layers.xavier_initializer()) as scope:
-      U = tf.get_variable("U", [hidden, len(self.vocab)])
+      U = tf.get_variable("U", [self.config.hidden, len(self.vocab)])
       b_2 = tf.get_variable("b_2", [len(self.vocab)])
 
-    outputs = tf.map_fn(lambda x: tf.matmul(x, U) + b_2)
+      outputs = [tf.matmul(x, U) + b_2 for x in rnn_outputs]
     ### END YOUR CODE
     return outputs
 
@@ -148,8 +148,14 @@ class RNNLM_Model(LanguageModel):
       loss: A 0-d tensor (scalar)
     """
     ### YOUR CODE HERE
-    weights = tf.ones([batch_size, num_steps], tf.int32)
-    loss = tf.python.ops.seq2seq.sequence_loss(output, self.labels_placeholder, weights)
+    weights = tf.ones([self.config.batch_size * self.config.num_steps], tf.int32)
+    seq_loss = tf.python.ops.seq2seq.sequence_loss(
+      [output], 
+      tf.reshape(self.labels_placeholder. [-1]), 
+      weights
+      )
+    tf.add_to_collection('total_loss', seq_loss)
+    loss = tf.add_n(tf.get_collection('total_loss')) 
     ### END YOUR CODE
     return loss
 
@@ -173,7 +179,7 @@ class RNNLM_Model(LanguageModel):
       train_op: The Op for training.
     """
     ### YOUR CODE HERE
-    opt = tf.train.AdamOptimizer(lr)
+    opt = tf.train.AdamOptimizer(self.config.lr)
     global_step = tf.Variable(0, name="global_step", trainable=False)
     train_op = opt.minimize(loss, global_step=global_step)
     ### END YOUR CODE
@@ -242,6 +248,7 @@ class RNNLM_Model(LanguageModel):
       I = tf.get_variable("I", [embed_size, hidden_size])
       b_1 = tf.get_variable("b_1", (hidden_size,))
       self.initial_state = tf.zeros([batch_size, hidden_size], tf.float32)
+      inputs_drop = tf.nn.dropout(inputs, dropout)
       #to do:
 
     ### END YOUR CODE
