@@ -27,14 +27,14 @@ class Config(object):
   embed_size = 50
   hidden_size = 100
   num_steps = 10
-  max_epochs = 16
+  max_epochs = 1#16
   early_stopping = 2
   dropout = 0.9
   lr = 0.001
 
 class RNNLM_Model(LanguageModel):
 
-  def load_data(self, debug=False):
+  def load_data(self, debug=True):
     """Loads starter word-vectors and train/dev/test data."""
     self.vocab = Vocab()
     self.vocab.construct(get_ptb_dataset('train'))
@@ -103,7 +103,7 @@ class RNNLM_Model(LanguageModel):
     # The embedding lookup is currently only implemented for the CPU
     with tf.device('/gpu:0'):
       ### YOUR CODE HERE
-      embedding = tf.get_variable("Embedding", [len(self.vocab), embed_size])
+      embedding = tf.get_variable("Embedding", [len(self.vocab), self.config.embed_size])
       e_x = tf.nn.embedding_lookup(embedding, self.input_placeholder)
       inputs = [tf.squeeze(s, [1]) for s in tf.split(1, self.config.num_steps, e_x)] 
       ### END YOUR CODE
@@ -130,7 +130,7 @@ class RNNLM_Model(LanguageModel):
     """
     ### YOUR CODE HERE
     with tf.variable_scope("Projection", initializer=tf.contrib.layers.xavier_initializer()) as scope:
-      U = tf.get_variable("U", [self.config.hidden, len(self.vocab)])
+      U = tf.get_variable("U", [self.config.hidden_size, len(self.vocab)])
       b_2 = tf.get_variable("b_2", [len(self.vocab)])
 
       outputs = [tf.matmul(x, U) + b_2 for x in rnn_outputs]
@@ -149,9 +149,9 @@ class RNNLM_Model(LanguageModel):
     """
     ### YOUR CODE HERE
     weights = tf.ones([self.config.batch_size * self.config.num_steps], tf.int32)
-    seq_loss = tf.python.ops.seq2seq.sequence_loss(
+    seq_loss = tf.python.seq2seq.sequence_loss(
       [output], 
-      tf.reshape(self.labels_placeholder. [-1]), 
+      tf.reshape(self.labels_placeholder, [-1]), 
       weights
       )
     tf.add_to_collection('total_loss', seq_loss)
@@ -258,7 +258,7 @@ class RNNLM_Model(LanguageModel):
         else :
           s = tf.sigmoid(tf.matmul(states[-1], H) + tf.matmul(e, I) + b_1)
           states.append(s)
-          tf.reuse_variables()
+          scope.reuse_variables()
 
     rnn_outputs = [tf.nn.dropout(o, self.dropout_placeholder) for o in states]
     ### END YOUR CODE
