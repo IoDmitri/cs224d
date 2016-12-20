@@ -244,13 +244,23 @@ class RNNLM_Model(LanguageModel):
     """
     ### YOUR CODE HERE
     with tf.variable_scope("RNN", initializer=tf.contrib.layers.xavier_initializer()) as scope:
-      H = tf.get_variable("Hidden", [hidden_size, hidden_size])
-      I = tf.get_variable("I", [embed_size, hidden_size])
-      b_1 = tf.get_variable("b_1", (hidden_size,))
-      self.initial_state = tf.zeros([batch_size, hidden_size], tf.float32)
-      inputs_drop = tf.nn.dropout(inputs, dropout)
-      #to do:
+      H = tf.get_variable("Hidden", [self.config.hidden_size, self.config.hidden_size])
+      I = tf.get_variable("I", [self.config.embed_size, self.config.hidden_size])
+      b_1 = tf.get_variable("b_1", (self.config.hidden_size,))
+      self.initial_state = tf.zeros([self.config.batch_size, self.config.hidden_size], tf.float32)
+      inputs_drop = [tf.nn.dropout(i, self.dropout_placeholder) for i in inputs]
+      states = []
 
+      for e in inputs:
+        if not states:
+          s = tf.sigmoid(tf.matmul(e, I) + b_1)
+          states.append(s)
+        else :
+          s = tf.sigmoid(tf.matmul(states[-1], H) + tf.matmul(e, I) + b_1)
+          states.append(s)
+          tf.reuse_variables()
+
+    rnn_outputs = [tf.nn.dropout(o, self.dropout_placeholder) for o in states]
     ### END YOUR CODE
     return rnn_outputs
 
