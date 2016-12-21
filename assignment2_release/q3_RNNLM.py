@@ -27,14 +27,14 @@ class Config(object):
   embed_size = 50
   hidden_size = 100
   num_steps = 10
-  max_epochs = 1#16
+  max_epochs = 16
   early_stopping = 2
   dropout = 0.9
   lr = 0.001
 
 class RNNLM_Model(LanguageModel):
 
-  def load_data(self, debug=True):
+  def load_data(self, debug=False):
     """Loads starter word-vectors and train/dev/test data."""
     self.vocab = Vocab()
     self.vocab.construct(get_ptb_dataset('train'))
@@ -129,7 +129,7 @@ class RNNLM_Model(LanguageModel):
                (batch_size, len(vocab)
     """
     ### YOUR CODE HERE
-    with tf.variable_scope("Projection", initializer=tf.contrib.layers.xavier_initializer()) as scope:
+    with tf.variable_scope("Projection") as scope:
       U = tf.get_variable("U", [self.config.hidden_size, len(self.vocab)])
       b_2 = tf.get_variable("b_2", [len(self.vocab)])
 
@@ -138,6 +138,7 @@ class RNNLM_Model(LanguageModel):
     return outputs
 
   def add_loss_op(self, output):
+    print "In add loss"
     """Adds loss ops to the computational graph.
 
     Hint: Use tensorflow.python.ops.seq2seq.sequence_loss to implement sequence loss. 
@@ -148,18 +149,19 @@ class RNNLM_Model(LanguageModel):
       loss: A 0-d tensor (scalar)
     """
     ### YOUR CODE HERE
-    weights = tf.ones([self.config.batch_size * self.config.num_steps], tf.int32)
-    seq_loss = tf.python.seq2seq.sequence_loss(
+    weights = [tf.ones([self.config.batch_size * self.config.num_steps], tf.float32)]
+    seq_loss = sequence_loss(
       [output], 
-      tf.reshape(self.labels_placeholder, [-1]), 
+      [tf.reshape(self.labels_placeholder, [-1])], 
       weights
-      )
+    )
     tf.add_to_collection('total_loss', seq_loss)
     loss = tf.add_n(tf.get_collection('total_loss')) 
     ### END YOUR CODE
     return loss
 
   def add_training_op(self, loss):
+   
     """Sets up the training Ops.
 
     Creates an optimizer and applies the gradients to all trainable variables.
@@ -180,8 +182,7 @@ class RNNLM_Model(LanguageModel):
     """
     ### YOUR CODE HERE
     opt = tf.train.AdamOptimizer(self.config.lr)
-    global_step = tf.Variable(0, name="global_step", trainable=False)
-    train_op = opt.minimize(loss, global_step=global_step)
+    train_op = opt.minimize(loss)
     ### END YOUR CODE
     return train_op
   
@@ -243,24 +244,27 @@ class RNNLM_Model(LanguageModel):
                a tensor of shape (batch_size, hidden_size)
     """
     ### YOUR CODE HERE
-    with tf.variable_scope("RNN", initializer=tf.contrib.layers.xavier_initializer()) as scope:
-      H = tf.get_variable("Hidden", [self.config.hidden_size, self.config.hidden_size])
-      I = tf.get_variable("I", [self.config.embed_size, self.config.hidden_size])
-      b_1 = tf.get_variable("b_1", (self.config.hidden_size,))
-      self.initial_state = tf.zeros([self.config.batch_size, self.config.hidden_size], tf.float32)
+    with tf.variable_scope("input_drop"):
       inputs_drop = [tf.nn.dropout(i, self.dropout_placeholder) for i in inputs]
+
+    with tf.variable_scope("RNN") as scope:
+      self.initial_state = tf.zeros([self.config.batch_size, self.config.hidden_size], tf.float32)
+      state = self.initial_state
       states = []
-
-      for e in inputs:
-        if not states:
-          s = tf.sigmoid(tf.matmul(e, I) + b_1)
-          states.append(s)
-        else :
-          s = tf.sigmoid(tf.matmul(states[-1], H) + tf.matmul(e, I) + b_1)
-          states.append(s)
+      for t, e in enumerate(inputs_drop):
+        if t > 0:
           scope.reuse_variables()
+        H = tf.get_variable("Hidden", [self.config.hidden_size, self.config.hidden_size])
+        I = tf.get_variable("I", [self.config.embed_size, self.config.hidden_size])
+        b_1 = tf.get_variable("b_1", (self.config.hidden_size,))
 
-    rnn_outputs = [tf.nn.dropout(o, self.dropout_placeholder) for o in states]
+        state = tf.sigmoid(tf.matmul(state, H) + tf.matmul(e, I) + b_1)
+        states.append(state)
+
+      self.final_state = states[-1]
+
+    with tf.variable_scope("output_dropout"):
+      rnn_outputs = [tf.nn.dropout(o, self.dropout_placeholder) for o in states]
     ### END YOUR CODE
     return rnn_outputs
 
@@ -340,8 +344,8 @@ def test_RNNLM():
   with tf.variable_scope('RNNLM') as scope:
     model = RNNLM_Model(config)
     # This instructs gen_model to reuse the same variables as the model above
-    scope.reuse_variables()
-    gen_model = RNNLM_Model(gen_config)
+    # scope.reuse_variables()
+    # gen_model = RNNLM_Model(gen_config)
 
   init = tf.initialize_all_variables()
   saver = tf.train.Saver()
@@ -369,7 +373,7 @@ def test_RNNLM():
         break
       print 'Total time: {}'.format(time.time() - start)
       
-    saver.restore(session, 'ptb_rnnlm.weights')
+    saver.restore(session, './ptb_rnnlm.weights')
     test_pp = model.run_epoch(session, model.encoded_test)
     print '=-=' * 5
     print 'Test perplexity: {}'.format(test_pp)
@@ -377,7 +381,7 @@ def test_RNNLM():
     starting_text = 'in palo alto'
     while starting_text:
       print ' '.join(generate_sentence(
-          session, gen_model, gen_config, starting_text=starting_text, temp=1.0))
+          session, model, gen_config, starting_text=starting_text, temp=1.0))
       starting_text = raw_input('> ')
 
 if __name__ == "__main__":

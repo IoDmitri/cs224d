@@ -252,6 +252,7 @@ class NERModel(LanguageModel):
       train_op: The Op for training.
     """
     ### YOUR CODE HERE
+    print "In add_training_opt"
     opt = tf.train.AdamOptimizer(self.config.lr)
     global_step = tf.Variable(0, name="global_step", trainable=False)
     train_op = opt.minimize(loss, global_step=global_step)
