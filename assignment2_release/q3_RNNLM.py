@@ -393,7 +393,7 @@ def test_RNNLM():
     gen_saver = tf.train.import_meta_graph("./ptb_rnnlm.weights.meta")
     gen_saver.restore(session, './ptb_rnnlm.weights')
     saver.restore(session, './ptb_rnnlm.weights')
-    test_pp  model.run_epoch(session, model.encoded_test)
+    test_pp = model.run_epoch(session, model.encoded_test)
     print '=-=' * 5
     print 'Test perplexity: {}'.format(test_pp)
     print '=-=' * 5
