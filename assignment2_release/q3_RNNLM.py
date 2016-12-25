@@ -322,7 +322,20 @@ def generate_text(session, model, config, starting_text='<eos>',
   tokens = [model.vocab.encode(word) for word in starting_text.split()]
   for i in xrange(stop_length):
     ### YOUR CODE HERE
-    raise NotImplementedError
+    # feed = {model.input_placeholder: [tokens[-1:]],
+    #         model.initial_state: state,
+    #         model.dropout_placeholder: 1}
+    # state, y_pred = session.run(
+    #     [model.final_state, model.predictions[-1]], feed_dict=feed)
+
+
+    state, y_pred = session.run(
+      [model.final_state, model.predictions[-1]], feed_dict= {
+        model.input_placeholder : [tokens[-1:]],
+        model.initial_state: state,
+        model.dropout_placeholder: config.dropout
+      }
+    )
     ### END YOUR CODE
     next_word_idx = sample(y_pred[0], temperature=temp)
     tokens.append(next_word_idx)
@@ -346,6 +359,8 @@ def test_RNNLM():
     # This instructs gen_model to reuse the same variables as the model above
     # scope.reuse_variables()
     # gen_model = RNNLM_Model(gen_config)
+  with tf.variable_scope("RNNLM_GEN") as scope:
+    gen_model = RNNLM_Model(gen_config)
 
   init = tf.initialize_all_variables()
   saver = tf.train.Saver()
@@ -372,16 +387,20 @@ def test_RNNLM():
       if epoch - best_val_epoch > config.early_stopping:
         break
       print 'Total time: {}'.format(time.time() - start)
-      
+    
+
+
+    gen_saver = tf.train.import_meta_graph("./ptb_rnnlm.weights.meta")
+    gen_saver.restore(session, './ptb_rnnlm.weights')
     saver.restore(session, './ptb_rnnlm.weights')
-    test_pp = model.run_epoch(session, model.encoded_test)
+    test_pp  model.run_epoch(session, model.encoded_test)
     print '=-=' * 5
     print 'Test perplexity: {}'.format(test_pp)
     print '=-=' * 5
-    starting_text = 'in palo alto'
+    starting_text = 'crisis'
     while starting_text:
       print ' '.join(generate_sentence(
-          session, model, gen_config, starting_text=starting_text, temp=1.0))
+          session, gen_model, gen_config, starting_text=starting_text, temp=1.0))
       starting_text = raw_input('> ')
 
 if __name__ == "__main__":
