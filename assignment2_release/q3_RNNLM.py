@@ -186,7 +186,7 @@ class RNNLM_Model(LanguageModel):
     ### END YOUR CODE
     return train_op
   
-  def __init__(self, config):
+  def __init__(self, config, trainable=True):
     self.config = config
     self.load_data(debug=False)
     self.add_placeholders()
@@ -200,9 +200,10 @@ class RNNLM_Model(LanguageModel):
     self.predictions = [tf.nn.softmax(tf.cast(o, 'float64')) for o in self.outputs]
     # Reshape the output into len(vocab) sized chunks - the -1 says as many as
     # needed to evenly divide
-    output = tf.reshape(tf.concat(1, self.outputs), [-1, len(self.vocab)])
-    self.calculate_loss = self.add_loss_op(output)
-    self.train_step = self.add_training_op(self.calculate_loss)
+    if trainable:
+      output = tf.reshape(tf.concat(1, self.outputs), [-1, len(self.vocab)])
+      self.calculate_loss = self.add_loss_op(output)
+      self.train_step = self.add_training_op(self.calculate_loss)
 
 
   def add_model(self, inputs):
@@ -349,6 +350,7 @@ def generate_sentence(session, model, config, *args, **kwargs):
   return generate_text(session, model, config, *args, stop_tokens=['<eos>'], **kwargs)
 
 def test_RNNLM():
+
   config = Config()
   gen_config = deepcopy(config)
   gen_config.batch_size = gen_config.num_steps = 1
@@ -357,10 +359,8 @@ def test_RNNLM():
   with tf.variable_scope('RNNLM') as scope:
     model = RNNLM_Model(config)
     # This instructs gen_model to reuse the same variables as the model above
-    # scope.reuse_variables()
-    # gen_model = RNNLM_Model(gen_config)
-  with tf.variable_scope("RNNLM_GEN") as scope:
-    gen_model = RNNLM_Model(gen_config)
+    scope.reuse_variables()
+    gen_model = RNNLM_Model(gen_config, trainable=False)
 
   init = tf.initialize_all_variables()
   saver = tf.train.Saver()
@@ -387,21 +387,73 @@ def test_RNNLM():
       if epoch - best_val_epoch > config.early_stopping:
         break
       print 'Total time: {}'.format(time.time() - start)
-    
-
-
-    gen_saver = tf.train.import_meta_graph("./ptb_rnnlm.weights.meta")
-    gen_saver.restore(session, './ptb_rnnlm.weights')
+      
     saver.restore(session, './ptb_rnnlm.weights')
     test_pp = model.run_epoch(session, model.encoded_test)
     print '=-=' * 5
     print 'Test perplexity: {}'.format(test_pp)
     print '=-=' * 5
-    starting_text = 'crisis'
+    starting_text = 'in palo alto'
     while starting_text:
       print ' '.join(generate_sentence(
           session, gen_model, gen_config, starting_text=starting_text, temp=1.0))
       starting_text = raw_input('> ')
+
+  # config = Config()
+  # gen_config = deepcopy(config)
+  # gen_config.batch_size = gen_config.num_steps = 1
+
+  # # We create the training model and generative model
+  # with tf.variable_scope('RNNLM') as scope:
+  #   model = RNNLM_Model(config)
+  #   # This instructs gen_model to reuse the same variables as the model above
+  #   # scope.reuse_variables()
+  #   # gen_model = RNNLM_Model(gen_config)
+  # with tf.variable_scope("RNNLM_GEN") as scope:
+  #   gen_model = RNNLM_Model(gen_config)
+
+  # init = tf.initialize_all_variables()
+  # saver = tf.train.Saver()
+
+  # with tf.Session() as session:
+  #   best_val_pp = float('inf')
+  #   best_val_epoch = 0
+  
+  #   session.run(init)
+  #   for epoch in xrange(config.max_epochs):
+  #     print 'Epoch {}'.format(epoch)
+  #     start = time.time()
+  #     ###
+  #     train_pp = model.run_epoch(
+  #         session, model.encoded_train,
+  #         train_op=model.train_step)
+  #     valid_pp = model.run_epoch(session, model.encoded_valid)
+  #     print 'Training perplexity: {}'.format(train_pp)
+  #     print 'Validation perplexity: {}'.format(valid_pp)
+  #     if valid_pp < best_val_pp:
+  #       best_val_pp = valid_pp
+  #       best_val_epoch = epoch
+  #       saver.save(session, './ptb_rnnlm.weights')
+  #     if epoch - best_val_epoch > config.early_stopping:
+  #       break
+  #     print 'Total time: {}'.format(time.time() - start)
+    
+
+
+  #   gen_saver = tf.train.import_meta_graph("./ptb_rnnlm.weights.meta")
+  #   gen_saver.restore(session, './ptb_rnnlm.weights')
+  #   saver.restore(session, './ptb_rnnlm.weights')
+  #   test_pp = model.run_epoch(session, model.encoded_test)
+  #   print '=-=' * 5
+  #   print 'Test perplexity: {}'.format(test_pp)
+  #   print '=-=' * 5
+  #   starting_text = 'in palo alto'
+  #   while starting_text:
+  #     print ' '.join(generate_sentence(
+  #         session, gen_model, gen_config, starting_text=starting_text, temp=1.0))
+  #     starting_text = raw_input('> ')
+
+
 
 if __name__ == "__main__":
     test_RNNLM()
